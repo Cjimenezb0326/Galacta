@@ -1,6 +1,7 @@
 #from PIL import Image, ImageChops, ImageEnhance, ImageOps
 import pygame, random, time 
 import os
+import math
 
 pygame.init()
 WHITE =(255, 255, 255, 255)
@@ -27,6 +28,7 @@ bonus_tel_d = cargar_imagen("bonus_tel_d.png")
 bonus_pts_d = cargar_imagen("bonus_pts_d.png")
 bonus_escudo_d = cargar_imagen("escudo_d.png")
 bonus_vidas_d = cargar_imagen("bonus_vidas_d.png")
+bala_tel_img=cargar_imagen("bala_tel.png")
 #############################################################################################################
 carpeta_sonidos = "sonidos"
 def cargar_sonido(nombre_archivo):
@@ -36,11 +38,18 @@ def cargar_sonido(nombre_archivo):
 mov_sonido = cargar_sonido("movimiento.wav")
 bala_sonido = cargar_sonido("bala_sonido.wav")
 bonus_son=cargar_sonido("bonus_son.wav")
+exp_son=cargar_sonido("exp.wav")
 #############################################################################################################
 
 screen = pygame.display.set_mode((1300, 720))
 clock = pygame.time.Clock()
 running = True
+bonus_c=False
+bala_exp=False
+bonus_v=False
+bala_tel=False
+balas_tel=0
+ang=0
 ##############################################################################################################
 class box(pygame.sprite.Sprite):
 	def __init__(self):
@@ -90,9 +99,14 @@ class Bala(pygame.sprite.Sprite):
 		self.image = balaimg
 		self.image.set_colorkey(BLACK)
 		self.rect = self.image.get_rect()
+		self.angle = 0
 
 	def update(self):
-    		self.rect.y -= 15
+				bala.angle+=ang
+				self.rect.y -=6
+				self.rect.x *=math.cos(self.angle)
+
+	
 class Bonus_exp(pygame.sprite.Sprite):
 	def __init__(self):
 		super().__init__()
@@ -144,10 +158,10 @@ bonus_2= Bonus_tel()
 bonus_3= Bonus_pts()
 bonus_4= Bonus_vidas()
 bonus_5= Bonus_escudo()
-
 all_sprite_list.add(bonus_1, bonus_2, bonus_3,bonus_4,bonus_5,bonus_box,player)
 bonus_box_1.add(bonus_box)
 ###############################################################################################################
+
 while running:
 	for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -165,16 +179,37 @@ while running:
 				if event.key == pygame.K_LEFT:
 					player.changespeedx(-6)
 					mov_sonido.play()
-				if player.rect.y >=579:
-					player.changespeed(0)
 				if event.key == pygame.K_SPACE:
 					bala = Bala()
+					if bala_exp:
+						bala.image=bonus_exp
+						exp_son.play()
+						bala_exp=False
+					if bala_tel:
+						bala.image=bala_tel_img
+						ang+=0.001
+						balas_tel-=1
+						if balas_tel==0:
+							bala_tel=False
+							ang-=0.001
+
+ 
 					bala.rect.x = player.rect.x+16
 					bala.rect.y = player.rect.y +5
 					bala_sonido.play()
-				
 					all_sprite_list.add(bala)
 					bala_list.add(bala)
+
+				if event.key == pygame.K_c:
+					if bonus_c:
+						bonus_1.image=bonus_exp_d
+						bonus_c=False
+						bala_exp=True
+				if event.key == pygame.K_v:	
+					if bonus_v:
+						bonus_2.image=bonus_tel_d
+						bala_tel=True
+						balas_tel=3		
 			if event.type == pygame.KEYUP:
 				if event.key == pygame.K_DOWN:
 					player.changespeed(-6)
@@ -188,11 +223,13 @@ while running:
 	bonus_hit=pygame.sprite.spritecollide(player,bonus_box_1 ,True) 
 	if bonus_hit:
 			bonus_son.play()
-			bonus_prob=random.randint(1,5)
+			bonus_prob=2 #random.randint(1,5)
 			if bonus_prob==1:
 				bonus_1.image=bonus_exp
+				bonus_c=True
 			if bonus_prob==2:
 				bonus_2.image=bonus_tel
+				bonus_v=True
 			if bonus_prob==3:
 				bonus_3.image=bonus_pts
 			if bonus_prob==4:
